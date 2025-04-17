@@ -1,0 +1,245 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chase Bank Sandbox - Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .plaid-modal {
+      background-color: #fff;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      width: 400px;
+      max-width: 90vw;
+      padding: 32px;
+      box-sizing: border-box;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .plaid-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .plaid-header img {
+      height: 28px;
+      margin-right: 10px;
+    }
+
+    .plaid-header h2 {
+      font-size: 1rem;
+      color: #1a1a1a;
+      margin: 0;
+    }
+
+    .plaid-form label {
+      display: block;
+      font-size: 0.875rem;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .plaid-form input[type="text"],
+    .plaid-form input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e0;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+    }
+
+    .plaid-form .remember-me {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .plaid-form .remember-me input {
+      margin-right: 6px;
+    }
+
+    .plaid-form button {
+      width: 100%;
+      padding: 12px;
+      background-color: #005eb8;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .plaid-form button:hover {
+      background-color: #004c99;
+    }
+
+    .forgot-link,
+    .security-info,
+    .plaid-footer {
+      font-size: 0.75rem;
+      color: #6b7280;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .forgot-link a {
+      color: #005eb8;
+      text-decoration: none;
+    }
+
+    .forgot-link a:hover {
+      text-decoration: underline;
+    }
+
+    .plaid-modal .back-link {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .plaid-modal .back-link a {
+      color: #005eb8;
+      text-decoration: none;
+      font-size: 0.85rem;
+    }
+  </style>
+  <script>
+    const users = {
+      "alice": {
+        accounts: [
+          { type: "checking", name: "Chase Total Checking", masked: "1234", balance: "$2,560.22" },
+          { type: "savings", name: "Chase Savings", masked: "5678", balance: "$8,220.10" }
+        ],
+        transactions: [
+          "04/14/2025 - Starbucks (Dining) - $4.75",
+          "04/13/2025 - Amazon (Shopping) - $82.40",
+          "04/11/2025 - Direct Deposit (Income) - $2,000.00",
+          "04/10/2025 - Uber (Transport) - $18.00"
+        ]
+      },
+      "bob": {
+        accounts: [
+          { type: "credit", name: "Chase Freedom Credit Card", masked: "9012", balance: "$-1,150.67" }
+        ],
+        transactions: [
+          "04/14/2025 - Chipotle (Dining) - $10.35",
+          "04/13/2025 - Netflix (Entertainment) - $15.49",
+          "04/12/2025 - Shell Gas (Fuel) - $45.00"
+        ]
+      }
+    };
+
+    let currentUser = null;
+
+    function renderLogin() {
+      document.querySelector(".plaid-modal").innerHTML = `
+        <div class="plaid-header">
+          <img src="https://1000logos.net/wp-content/uploads/2017/06/Chase-logo.png" alt="Chase Logo">
+          <h2>Sign in to Chase</h2>
+        </div>
+        <form class="plaid-form" onsubmit="handleLogin(event)">
+          <label for="username">Username (try 'alice' or 'bob')</label>
+          <input type="text" id="username" name="username" required />
+
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+
+          <div class="remember-me">
+            <input type="checkbox" id="remember" name="remember" />
+            <label for="remember">Remember me</label>
+          </div>
+
+          <button type="submit">Sign In</button>
+
+          <div class="forgot-link">
+            <a href="#">Forgot username or password?</a>
+          </div>
+
+          <div class="security-info">
+            Your credentials are encrypted and never shared with Plaid or third parties.
+          </div>
+
+          <div class="plaid-footer">
+            © 2025 JPMorgan Chase & Co. | Privacy | Security | Legal
+          </div>
+        </form>
+      `;
+    }
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const username = document.getElementById("username").value.toLowerCase();
+      currentUser = users[username];
+
+      if (!currentUser) {
+        alert("Invalid username. Try 'alice' or 'bob'.");
+        return;
+      }
+
+      const accountList = currentUser.accounts.map((acc, i) =>
+        `<label><input type="radio" name="account" value="${acc.type}" ${i === 0 ? "checked" : ""}> ${acc.name} - ****${acc.masked} (${acc.balance})</label><br><br>`
+      ).join("");
+
+      document.querySelector(".plaid-modal").innerHTML = `
+        <h2 style="margin-bottom: 16px;">Select an account</h2>
+        <form onsubmit="showTransactions(event)">
+          ${accountList}
+          <button type="submit">Continue</button>
+        </form>
+        <div class="back-link">
+          <a href="#" onclick="renderLogin()">← Back to login</a>
+        </div>
+      `;
+    }
+
+    function showTransactions(event) {
+      event.preventDefault();
+      const txList = currentUser.transactions.map(tx => `<li>${tx}</li>`).join("");
+      document.querySelector(".plaid-modal").innerHTML = `
+        <h2 style="margin-bottom: 16px;">Recent Transactions</h2>
+        <ul style="font-size: 0.9rem; padding-left: 1rem;">
+          ${txList}
+        </ul>
+        <button onclick="finishLinking()" style="margin-top: 20px;">Connect Account</button>
+        <div class="back-link">
+          <a href="#" onclick="renderLogin()">← Back to login</a>
+        </div>
+      `;
+    }
+
+    function finishLinking() {
+      const publicToken = Math.random().toString(36).substring(2, 12);
+      document.querySelector(".plaid-modal").innerHTML = `
+        <h2>Account Linked!</h2>
+        <p style="text-align:center; font-size: 0.9rem; margin-top: 8px;">Public token generated:</p>
+        <code style="display: block; text-align: center; margin: 12px 0; color: #333;">${publicToken}</code>
+        <button onclick="renderLogin()">Link Another Account</button>
+      `;
+    }
+
+    window.onload = renderLogin;
+  </script>
+</head>
+<body>
+  <div class="plaid-modal"></div>
+</body>
+</html>
