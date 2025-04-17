@@ -1,127 +1,112 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chase Bank Sandbox - Login</title>
+  <title>Chase Bank Sandbox</title>
   <style>
+    /* Basic styling */
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f4f7fa;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
 
-    .plaid-modal {
-      background-color: #fff;
+    .modal {
+      background-color: white;
       border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       width: 400px;
-      max-width: 90vw;
       padding: 32px;
       box-sizing: border-box;
-      animation: fadeIn 0.3s ease-in-out;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
+    .modal h2 {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    .plaid-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .plaid-header img {
-      height: 28px;
-      margin-right: 10px;
-    }
-
-    .plaid-header h2 {
-      font-size: 1rem;
-      color: #1a1a1a;
-      margin: 0;
-    }
-
-    .plaid-form label {
-      display: block;
-      font-size: 0.875rem;
-      margin-bottom: 4px;
-      color: #333;
-    }
-
-    .plaid-form input[type="text"],
-    .plaid-form input[type="password"] {
+    input[type="text"],
+    input[type="password"] {
       width: 100%;
       padding: 10px;
-      border: 1px solid #cbd5e0;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
       border-radius: 8px;
-      margin-bottom: 16px;
-      font-size: 0.95rem;
     }
 
-    .plaid-form .remember-me {
-      display: flex;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .plaid-form .remember-me input {
-      margin-right: 6px;
-    }
-
-    .plaid-form button {
+    button {
       width: 100%;
       padding: 12px;
       background-color: #005eb8;
       color: white;
-      font-weight: 600;
+      font-weight: bold;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
       cursor: pointer;
-      transition: background-color 0.2s;
     }
 
-    .plaid-form button:hover {
+    button:hover {
       background-color: #004c99;
     }
 
-    .forgot-link,
-    .security-info,
-    .plaid-footer {
-      font-size: 0.75rem;
-      color: #6b7280;
-      text-align: center;
-      margin-top: 12px;
+    .account-list label {
+      display: block;
+      margin-bottom: 10px;
     }
 
-    .forgot-link a {
-      color: #005eb8;
-      text-decoration: none;
-    }
-
-    .forgot-link a:hover {
-      text-decoration: underline;
-    }
-
-    .plaid-modal .back-link {
+    .transaction-list {
       margin-top: 20px;
-      text-align: center;
+      padding-left: 20px;
     }
 
-    .plaid-modal .back-link a {
-      color: #005eb8;
-      text-decoration: none;
-      font-size: 0.85rem;
+    .footer {
+      font-size: 0.8rem;
+      color: #777;
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
+</head>
+<body>
+  <div class="modal" id="loginModal">
+    <h2>Sign in to Chase</h2>
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required />
+      
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required />
+      
+      <button type="submit">Sign In</button>
+    </form>
+    <div class="footer">© 2025 Chase Bank | Privacy | Security</div>
+  </div>
+
+  <div class="modal" id="accountModal" style="display:none;">
+    <h2>Welcome, <span id="userName"></span></h2>
+    <form id="accountForm">
+      <div class="account-list"></div>
+      <button type="submit">View Transactions</button>
+    </form>
+    <div class="footer">
+      <button onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="modal" id="transactionsModal" style="display:none;">
+    <h2>Recent Transactions</h2>
+    <ul class="transaction-list"></ul>
+    <button onclick="finishLinking()">Link Account</button>
+    <div class="footer">
+      <button onclick="backToAccounts()">Back</button>
+    </div>
+  </div>
+
   <script>
     const users = {
       "alice": {
@@ -150,96 +135,64 @@
 
     let currentUser = null;
 
-    function renderLogin() {
-      document.querySelector(".plaid-modal").innerHTML = `
-        <div class="plaid-header">
-          <img src="https://1000logos.net/wp-content/uploads/2017/06/Chase-logo.png" alt="Chase Logo">
-          <h2>Sign in to Chase</h2>
-        </div>
-        <form class="plaid-form" onsubmit="handleLogin(event)">
-          <label for="username">Username (try 'alice' or 'bob')</label>
-          <input type="text" id="username" name="username" required />
-
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required />
-
-          <div class="remember-me">
-            <input type="checkbox" id="remember" name="remember" />
-            <label for="remember">Remember me</label>
-          </div>
-
-          <button type="submit">Sign In</button>
-
-          <div class="forgot-link">
-            <a href="#">Forgot username or password?</a>
-          </div>
-
-          <div class="security-info">
-            Your credentials are encrypted and never shared with Plaid or third parties.
-          </div>
-
-          <div class="plaid-footer">
-            © 2025 JPMorgan Chase & Co. | Privacy | Security | Legal
-          </div>
-        </form>
-      `;
-    }
-
-    function handleLogin(event) {
-      event.preventDefault();
+    // Handle login form
+    document.getElementById("loginForm").addEventListener("submit", function(e) {
+      e.preventDefault();
       const username = document.getElementById("username").value.toLowerCase();
       currentUser = users[username];
-
       if (!currentUser) {
-        alert("Invalid username. Try 'alice' or 'bob'.");
+        alert("Invalid username.");
         return;
       }
+      showAccounts();
+    });
 
-      const accountList = currentUser.accounts.map((acc, i) =>
-        `<label><input type="radio" name="account" value="${acc.type}" ${i === 0 ? "checked" : ""}> ${acc.name} - ****${acc.masked} (${acc.balance})</label><br><br>`
+    // Show account selection page
+    function showAccounts() {
+      document.getElementById("loginModal").style.display = "none";
+      document.getElementById("accountModal").style.display = "block";
+      document.getElementById("userName").textContent = currentUser ? currentUser.accounts[0].name.split(" ")[0] : "";
+
+      const accountList = currentUser.accounts.map((account, i) => 
+        `<label><input type="radio" name="account" value="${account.type}" ${i === 0 ? 'checked' : ''}> ${account.name} - ****${account.masked} (${account.balance})</label>`
       ).join("");
 
-      document.querySelector(".plaid-modal").innerHTML = `
-        <h2 style="margin-bottom: 16px;">Select an account</h2>
-        <form onsubmit="showTransactions(event)">
-          ${accountList}
-          <button type="submit">Continue</button>
-        </form>
-        <div class="back-link">
-          <a href="#" onclick="renderLogin()">← Back to login</a>
-        </div>
-      `;
+      document.querySelector(".account-list").innerHTML = accountList;
     }
 
-    function showTransactions(event) {
-      event.preventDefault();
-      const txList = currentUser.transactions.map(tx => `<li>${tx}</li>`).join("");
-      document.querySelector(".plaid-modal").innerHTML = `
-        <h2 style="margin-bottom: 16px;">Recent Transactions</h2>
-        <ul style="font-size: 0.9rem; padding-left: 1rem;">
-          ${txList}
-        </ul>
-        <button onclick="finishLinking()" style="margin-top: 20px;">Connect Account</button>
-        <div class="back-link">
-          <a href="#" onclick="renderLogin()">← Back to login</a>
-        </div>
-      `;
+    // Show transactions for selected account
+    document.getElementById("accountForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      showTransactions();
+    });
+
+    function showTransactions() {
+      const selectedAccount = document.querySelector('input[name="account"]:checked').value;
+      const transactions = currentUser.transactions.map(tx => `<li>${tx}</li>`).join("");
+
+      document.getElementById("accountModal").style.display = "none";
+      document.getElementById("transactionsModal").style.display = "block";
+      document.querySelector(".transaction-list").innerHTML = transactions;
     }
 
     function finishLinking() {
       const publicToken = Math.random().toString(36).substring(2, 12);
-      document.querySelector(".plaid-modal").innerHTML = `
-        <h2>Account Linked!</h2>
-        <p style="text-align:center; font-size: 0.9rem; margin-top: 8px;">Public token generated:</p>
-        <code style="display: block; text-align: center; margin: 12px 0; color: #333;">${publicToken}</code>
-        <button onclick="renderLogin()">Link Another Account</button>
-      `;
+      alert(`Account Linked! Public token: ${publicToken}`);
+      backToAccounts();
     }
 
-    window.onload = renderLogin;
+    // Back to accounts page
+    function backToAccounts() {
+      document.getElementById("transactionsModal").style.display = "none";
+      showAccounts();
+    }
+
+    // Logout
+    function logout() {
+      currentUser = null;
+      document.getElementById("accountModal").style.display = "none";
+      document.getElementById("loginModal").style.display = "block";
+    }
   </script>
-</head>
-<body>
-  <div class="plaid-modal"></div>
 </body>
 </html>
